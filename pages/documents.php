@@ -393,7 +393,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-900"><?php echo __('document_list'); ?></h2>
             <a href="#uploadDocumentModal" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-150">
-                <i class="fas fa-upload mr-2"></i><?php echo __('upload_document'); ?>
+                <i class="fas fa-upload mr-2"></i><span class="hidden sm:inline"><?php echo __('upload_document'); ?></span>
             </a>
         </div>
     </div>
@@ -491,9 +491,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
             <div class="mt-4">
-                <input type="text" onkeyup="searchTable(this, 'documentsTable')" placeholder="<?php echo __('search'); ?>..." class="w-full md:w-64 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" id="searchInput" onkeyup="searchDocuments()" placeholder="<?php echo __('search'); ?>..." class="w-full md:w-64 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
             </div>
-            <div class="mt-4 overflow-x-auto">
+            
+            <!-- Table View (Desktop) -->
+            <div class="mt-4 overflow-x-auto hidden sm:block">
                 <table id="documentsTable" class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -548,6 +550,92 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Card View (Mobile) -->
+            <div class="mt-4 grid grid-cols-2 gap-4 sm:hidden">
+                <?php if (empty($documents)): ?>
+                <div class="col-span-full text-center text-gray-500 py-4"><?php echo __('no_data'); ?></div>
+                <?php else: ?>
+                <?php foreach ($documents as $doc): ?>
+                <?php
+                    $query = "SELECT versi FROM Metadata WHERE id_dokumen = :id_dokumen";
+                    $stmt = $db->prepare($query);
+                    $stmt->bindParam(':id_dokumen', $doc['id_dokumen'], PDO::PARAM_INT);
+                    $stmt->execute();
+                    $metadata = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $version = $metadata['versi'] ?? '1.0';
+                    $fileExt = pathinfo($doc['nama_file'], PATHINFO_EXTENSION);
+                    $fileIcon = getFileIcon($fileExt);
+                    $bgColor = 'bg-blue-100';
+                    $textColor = 'text-blue-700';
+                    
+                    if (strpos($fileIcon, 'pdf') !== false) {
+                        $bgColor = 'bg-red-100';
+                        $textColor = 'text-red-700';
+                    } elseif (strpos($fileIcon, 'word') !== false) {
+                        $bgColor = 'bg-blue-100';
+                        $textColor = 'text-blue-700';
+                    } elseif (strpos($fileIcon, 'excel') !== false) {
+                        $bgColor = 'bg-green-100';
+                        $textColor = 'text-green-700';
+                    } elseif (strpos($fileIcon, 'image') !== false) {
+                        $bgColor = 'bg-purple-100';
+                        $textColor = 'text-purple-700';
+                    }
+                ?>
+                <div class="document-card bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                    <div class="p-4">
+                        <div class="flex items-center mb-3">
+                            <div class="<?php echo $bgColor; ?> <?php echo $textColor; ?> p-2 rounded-lg mr-3">
+                                <i class="<?php echo htmlspecialchars($fileIcon); ?> text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium text-gray-900 truncate"><?php echo htmlspecialchars($doc['nama_file']); ?></h3>
+                                <p class="text-xs text-gray-500"><?php echo htmlspecialchars(formatFileSize($doc['ukuran_file'])); ?> • v<?php echo htmlspecialchars($version); ?></p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-xs text-gray-500 mb-3">
+                            <?php if (!empty($doc['nama_kategori'])): ?>
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-tag mr-1"></i>
+                                <span><?php echo htmlspecialchars($doc['nama_kategori']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($doc['nama_folder'])): ?>
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-folder mr-1"></i>
+                                <span><?php echo htmlspecialchars($doc['nama_folder']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar mr-1"></i>
+                                <span><?php echo date('M d, Y', strtotime($doc['tanggal_upload'])); ?></span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between border-t border-gray-200 pt-3">
+                            <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'read')): ?>
+                            <a href="<?php echo url('download', ['id' => $doc['id_dokumen']]); ?>" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <?php endif; ?>
+                            <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'write')): ?>
+                            <a href="<?php echo url('documents', ['action' => 'edit', 'id' => $doc['id_dokumen']]); ?>" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <?php endif; ?>
+                            <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'delete')): ?>
+                            <a href="<?php echo url('documents', ['action' => 'delete', 'id' => $doc['id_dokumen']]); ?>" onclick="return confirmDelete('<?php echo __('delete_confirmation'); ?>')" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -583,9 +671,11 @@ function confirmDelete(message) {
     return confirm(message);
 }
 
-function searchTable(input, tableId) {
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById(tableId);
+function searchDocuments() {
+    const filter = document.getElementById('searchInput').value.toLowerCase();
+    
+    // Search in table view
+    const table = document.getElementById('documentsTable');
     const rows = table.getElementsByTagName('tr');
     for (let i = 1; i < rows.length; i++) {
         const cells = rows[i].getElementsByTagName('td');
@@ -598,6 +688,13 @@ function searchTable(input, tableId) {
         }
         rows[i].style.display = match ? '' : 'none';
     }
+    
+    // Search in card view
+    const cards = document.querySelectorAll('.document-card');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(filter) ? '' : 'none';
+    });
 }
 </script>
 <?php ob_end_flush(); ?>

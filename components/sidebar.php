@@ -10,7 +10,8 @@
                     <i class="fas fa-file-archive text-white text-sm"></i>
                 </div>
                 <span class="text-lg font-semibold text-white">SMD Integrasi</span>
-                <span class="bg-slate-700 text-white text-xs font-semibold px-2 py-0.5 rounded-md">v1.1</span>
+                <span
+                    class="bg-slate-700 text-white text-xs font-semibold px-2 py-0.5 rounded-md">v<?php echo APP_VERSION; ?></span>
             </div>
         </div>
 

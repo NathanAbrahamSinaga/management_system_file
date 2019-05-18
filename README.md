@@ -73,9 +73,9 @@ File Management System adalah aplikasi web modern yang dirancang untuk mengelola
 
 | Kategori     | Teknologi                                         |
 | ------------ | ------------------------------------------------- |
-| **Backend**  | PHP 7.4+, PDO MySQL                               |
+| **Backend**  | PHP 8.2.11+, PDO MySQL                            |
 | **Frontend** | HTML5, TailwindCSS, JavaScript ES6+               |
-| **Database** | MySQL 5.7+ / MariaDB                              |
+| **Database** | MySQL 8.0.30+ / MariaDB                           |
 | **Icons**    | Font Awesome 6                                    |
 | **Security** | Password Hashing, CSRF Tokens, Input Sanitization |
 
@@ -220,8 +220,8 @@ define('MAX_FILE_SIZE', 20971520); // 20MB
 
 <table>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/d37cd78f-1b3b-45a1-a204-f208e294628f" alt="Dashboard Tampilan Atas" width="500"></td>
-    <td><img src="https://github.com/user-attachments/assets/ac075e06-ef2e-4497-8ef1-37365c624029" alt="Dashboard Tampilan Bawah" width="120"></td>
+    <td><img src="https://github.com/user-attachments/assets/eb7442b8-112f-46b4-ab55-bee622dfa2a9" alt="Dashboard Tampilan Atas" width="500"></td>
+    <td><img src="https://github.com/user-attachments/assets/b78fa308-13b6-4d17-a063-2cc71bee03e8" alt="Dashboard Tampilan Bawah" width="120"></td>
   </tr>
 </table>
 

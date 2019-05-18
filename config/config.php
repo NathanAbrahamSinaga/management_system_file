@@ -1,7 +1,7 @@
 <?php
 // Application configuration
 define('APP_NAME', 'File Management System');
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.0.1');
 define('APP_URL', 'http://localhost');
 
 // File upload settings
