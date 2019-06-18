@@ -384,7 +384,7 @@
                 mobileLanguageToggle.addEventListener('click', toggleMobileLangMenu);
             }
 
-            // Close sidebar when clicking overlay
+            // Close sidebar when clicking overlay back
             if (overlay) {
                 overlay.addEventListener('click', function () {
                     toggleSidebar();

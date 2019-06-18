@@ -21,6 +21,6 @@ if (session_status() == PHP_SESSION_NONE) {
 // Set default timezone
 date_default_timezone_set('Asia/Jakarta');
 
-// Auto-include database
+// Auto-include database..
 require_once __DIR__ . '/database.php';
 ?>
