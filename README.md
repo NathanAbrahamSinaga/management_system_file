@@ -186,13 +186,12 @@ define('MAX_FILE_SIZE', 20971520); // 20MB
 ## 🎨 Screenshots
 
 ### Dashboard
-![Dashboard](screenshots/dashboard.png)
+![image](https://github.com/user-attachments/assets/f11ae06c-7032-472c-b467-5094e13924a1)
+
 
 ### Document Management
-![Documents](screenshots/documents.png)
+![image](https://github.com/user-attachments/assets/4d6052ac-6ec6-4f99-a6b0-be32640381a0)
 
-### Folder Structure
-![Folders](screenshots/folders.png)
 
 ## 🤝 Kontribusi
 
@@ -250,16 +249,46 @@ Proyek ini dilisensikan under [MIT License](LICENSE) - lihat file LICENSE untuk 
 <table>
   <tr>
     <td align="center">
-      <a href="https://github.com/username">
-        <img src="https://github.com/username.png" width="100px;" alt=""/>
+      <a href="https://github.com/nathanAbrahamSinaga">
+        <img src="https://github.com/nathanAbrahamSinaga.png" width="100px;" alt="Nathan's profile picture"/>
         <br />
-        <sub><b>Developer Name</b></sub>
+        <sub><b>Nathan Abraham Sinaga</b></sub>
       </a>
       <br />
       <sub>Lead Developer</sub>
     </td>
+    <td align="center">
+      <a href="https://github.com/kangzid">
+        <img src="https://github.com/kangzid.png" width="100px;" alt="Zidan's profile picture"/>
+        <br />
+        <sub><b>Zidan Alfian Mubarok</b></sub>
+      </a>
+      <br />
+      <sub>Fullstack Developer</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/your-github-username">
+        <img src="https://github.com/your-github-username.png" width="100px;" alt="Your profile picture"/>
+        <br />
+        <sub><b>Rifaldo Candra</b></sub>
+      </a>
+      <br />
+      <sub>Database Engineer</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/another-github-user">
+        <img src="https://github.com/another-github-user.png" width="100px;" alt="Another profile picture"/>
+        <br />
+        <sub><b>Brillian Bagus Krisna</b></sub>
+      </a>
+      <br />
+      <sub>UI/UX Designer</sub>
+    </td>
   </tr>
 </table>
+
 
 ## 🙏 Acknowledgments
 
