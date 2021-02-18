@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 
+// MODIFIED: Check if ALLOWED_EXTENSIONS is already defined
+if (!defined('ALLOWED_EXTENSIONS')) {
+    define('ALLOWED_EXTENSIONS', ['pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar']);
+}
+
 // Format file size
 function formatFileSize($bytes) {
     if ($bytes >= 1073741824) {

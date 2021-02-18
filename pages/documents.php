@@ -46,6 +46,20 @@ function validateFolder($db, $folder_id) {
     }
 }
 
+function checkDuplicateFileName($db, $file_name, $id_user) {
+    try {
+        $query = "SELECT COUNT(*) as total FROM Dokumen WHERE nama_file = :nama_file AND id_user = :id_user";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':nama_file', $file_name);
+        $stmt->bindParam(':id_user', $id_user, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC)['total'] > 0;
+    } catch(PDOException $e) {
+        error_log("Duplicate file name check failed: " . $e->getMessage());
+        return false;
+    }
+}
+
 if (!is_dir(UPLOAD_DIR)) {
     mkdir(UPLOAD_DIR, 0755, true);
 }
@@ -64,6 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $id_kategori = (int)($_POST['id_kategori'] ?? 0);
         $id_folder = (int)($_POST['id_folder'] ?? 0);
 
+        if (checkDuplicateFileName($db, $nama_file, $_SESSION['user_id'])) {
+            $_SESSION['error_message'] = 'A file with the same name already exists';
+            header('Location: index.php?page=documents');
+            exit;
+        }
+
         if (!validateCategory($db, $id_kategori)) {
             $_SESSION['error_message'] = 'Invalid category selected';
             header('Location: index.php?page=documents');
@@ -75,47 +95,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             exit;
         }
 
-        if (validateFileType($file) && validateFileSize($file)) {
-            $unique_filename = generateUniqueFilename($nama_file);
-            $destination = UPLOAD_DIR . $unique_filename;
+        if (!validateFileType($file)) {
+            // CHANGED: Specific error message for invalid file type
+            $_SESSION['error_message'] = 'Invalid file type. Allowed types: ' . implode(', ', ALLOWED_EXTENSIONS);
+            header('Location: index.php?page=documents');
+            exit;
+        }
+        if (!validateFileSize($file)) {
+            $_SESSION['error_message'] = 'File is too large. Maximum size: ' . formatFileSize(MAX_FILE_SIZE);
+            header('Location: index.php?page=documents');
+            exit;
+        }
 
-            if (move_uploaded_file($file['tmp_name'], $destination)) {
-                try {
-                    $query = "INSERT INTO Dokumen (nama_file, deskripsi, tanggal_upload, tipe_file, ukuran_file, path_file, id_user, id_kategori) 
-                              VALUES (:nama_file, :deskripsi, NOW(), :tipe_file, :ukuran_file, :path_file, :id_user, :id_kategori)";
+        $unique_filename = generateUniqueFilename($nama_file);
+        $destination = UPLOAD_DIR . $unique_filename;
+
+        if (move_uploaded_file($file['tmp_name'], $destination)) {
+            try {
+                $query = "INSERT INTO Dokumen (nama_file, deskripsi, tanggal_upload, tipe_file, ukuran_file, path_file, id_user, id_kategori) 
+                          VALUES (:nama_file, :deskripsi, NOW(), :tipe_file, :ukuran_file, :path_file, :id_user, :id_kategori)";
+                $stmt = $db->prepare($query);
+                $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $stmt->bindParam(':nama_file', $unique_filename);
+                $stmt->bindParam(':deskripsi', $deskripsi);
+                $stmt->bindParam(':tipe_file', $extension);
+                $stmt->bindParam(':ukuran_file', $file['size'], PDO::PARAM_INT);
+                $stmt->bindParam(':path_file', $destination);
+                $stmt->bindParam(':id_user', $_SESSION['user_id'], PDO::PARAM_INT);
+                $stmt->bindValue(':id_kategori', $id_kategori > 0 ? $id_kategori : null, PDO::PARAM_INT);
+                if ($stmt->execute()) {
+                    $id_dokumen = $db->lastInsertId();
+                    
+                    $query = "INSERT INTO Metadata (id_dokumen, judul, penulis, tanggal_dibuat, versi) 
+                              VALUES (:id_dokumen, :judul, :penulis, NOW(), :versi)";
                     $stmt = $db->prepare($query);
-                    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                    $stmt->bindParam(':nama_file', $unique_filename);
-                    $stmt->bindParam(':deskripsi', $deskripsi);
-                    $stmt->bindParam(':tipe_file', $extension);
-                    $stmt->bindParam(':ukuran_file', $file['size'], PDO::PARAM_INT);
-                    $stmt->bindParam(':path_file', $destination);
-                    $stmt->bindParam(':id_user', $_SESSION['user_id'], PDO::PARAM_INT);
-                    $stmt->bindValue(':id_kategori', $id_kategori > 0 ? $id_kategori : null, PDO::PARAM_INT);
-                    if ($stmt->execute()) {
-                        $id_dokumen = $db->lastInsertId();
-                        if ($id_folder > 0) {
-                            $query = "INSERT INTO Dokumen_Folder (id_dokumen, id_folder) VALUES (:id_dokumen, :id_folder)";
-                            $stmt = $db->prepare($query);
-                            $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
-                            $stmt->bindParam(':id_folder', $id_folder, PDO::PARAM_INT);
-                            $stmt->execute();
-                        }
-                        logActivity($_SESSION['user_id'], $id_dokumen, 'upload');
-                        $_SESSION['success_message'] = __('upload_success');
-                    } else {
-                        unlink($destination);
-                        $_SESSION['error_message'] = __('upload_failed');
+                    $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
+                    $stmt->bindParam(':judul', $nama_file);
+                    $stmt->bindParam(':penulis', $_SESSION['user_name']);
+                    $stmt->bindValue(':versi', '1.0');
+                    $stmt->execute();
+
+                    if ($id_folder > 0) {
+                        $query = "INSERT INTO Dokumen_Folder (id_dokumen, id_folder) VALUES (:id_dokumen, :id_folder)";
+                        $stmt = $db->prepare($query);
+                        $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
+                        $stmt->bindParam(':id_folder', $id_folder, PDO::PARAM_INT);
+                        $stmt->execute();
                     }
-                } catch(PDOException $e) {
+                    logActivity($_SESSION['user_id'], $id_dokumen, 'upload');
+                    $_SESSION['success_message'] = __('upload_success');
+                } else {
                     unlink($destination);
-                    $_SESSION['error_message'] = __('upload_failed') . ': ' . $e->getMessage();
+                    $_SESSION['error_message'] = __('upload_failed');
                 }
-            } else {
-                $_SESSION['error_message'] = __('upload_failed') . ': Unable to move file';
+            } catch(PDOException $e) {
+                unlink($destination);
+                $_SESSION['error_message'] = __('upload_failed') . ': ' . $e->getMessage();
             }
         } else {
-            $_SESSION['error_message'] = __('invalid_file_type') . ' or ' . __('file_too_large');
+            $_SESSION['error_message'] = __('upload_failed') . ': Unable to move file';
         }
     } else {
         $_SESSION['error_message'] = __('select_file');
@@ -171,42 +209,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
             if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
                 $file = $_FILES['file'];
-                if (validateFileType($file) && validateFileSize($file)) {
-                    $unique_filename = generateUniqueFilename($file['name']);
-                    $destination = UPLOAD_DIR . $unique_filename;
+                $nama_file = sanitizeInput($file['name']);
 
-                    $query = "SELECT path_file FROM Dokumen WHERE id_dokumen = :id_dokumen";
+                if (checkDuplicateFileName($db, $nama_file, $_SESSION['user_id'])) {
+                    $_SESSION['error_message'] = 'A file with the same name already exists';
+                    header('Location: index.php?page=documents');
+                    exit;
+                }
+
+                if (!validateFileType($file)) {
+                    // CHANGED: Specific error message for invalid file type
+                    $_SESSION['error_message'] = 'Invalid file type. Allowed types: ' . implode(', ', ALLOWED_EXTENSIONS);
+                    header('Location: index.php?page=documents');
+                    exit;
+                }
+                if (!validateFileSize($file)) {
+                    $_SESSION['error_message'] = 'File is too large. Maximum size: ' . formatFileSize(MAX_FILE_SIZE);
+                    header('Location: index.php?page=documents');
+                    exit;
+                }
+
+                $unique_filename = generateUniqueFilename($nama_file);
+                $destination = UPLOAD_DIR . $unique_filename;
+
+                $query = "SELECT path_file FROM Dokumen WHERE id_dokumen = :id_dokumen";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
+                $stmt->execute();
+                $old_file = $stmt->fetch(PDO::FETCH_ASSOC)['path_file'];
+
+                if (move_uploaded_file($file['tmp_name'], $destination)) {
+                    $query = "UPDATE Metadata SET judul = :judul, penulis = :penulis, tanggal_dibuat = NOW(), versi = :versi WHERE id_dokumen = :id_dokumen";
                     $stmt = $db->prepare($query);
+                    $stmt->bindParam(':judul', $nama_file);
+                    $stmt->bindParam(':penulis', $_SESSION['user_name']);
+                    $stmt->bindValue(':versi', '2.0');
                     $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
                     $stmt->execute();
-                    $old_file = $stmt->fetch(PDO::FETCH_ASSOC)['path_file'];
 
-                    if (move_uploaded_file($file['tmp_name'], $destination)) {
-                        $query = "UPDATE Dokumen SET nama_file = :nama_file, tipe_file = :tipe_file, ukuran_file = :ukuran_file, path_file = :path_file WHERE id_dokumen = :id_dokumen";
-                        $stmt = $db->prepare($query);
-                        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                        $stmt->bindParam(':nama_file', $unique_filename);
-                        $stmt->bindParam(':tipe_file', $extension);
-                        $stmt->bindParam(':ukuran_file', $file['size'], PDO::PARAM_INT);
-                        $stmt->bindParam(':path_file', $destination);
-                        $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
-                        if ($stmt->execute()) {
-                            if ($old_file && file_exists($old_file)) {
-                                unlink($old_file);
-                            }
-                        } else {
-                            unlink($destination);
-                            $_SESSION['error_message'] = __('update_failed');
-                            header('Location: index.php?page=documents');
-                            exit;
+                    $query = "UPDATE Dokumen SET nama_file = :nama_file, tipe_file = :tipe_file, ukuran_file = :ukuran_file, path_file = :path_file WHERE id_dokumen = :id_dokumen";
+                    $stmt = $db->prepare($query);
+                    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $stmt->bindParam(':nama_file', $unique_filename);
+                    $stmt->bindParam(':tipe_file', $extension);
+                    $stmt->bindParam(':ukuran_file', $file['size'], PDO::PARAM_INT);
+                    $stmt->bindParam(':path_file', $destination);
+                    $stmt->bindParam(':id_dokumen', $id_dokumen, PDO::PARAM_INT);
+                    if ($stmt->execute()) {
+                        if ($old_file && file_exists($old_file)) {
+                            unlink($old_file);
                         }
                     } else {
-                        $_SESSION['error_message'] = __('update_failed') . ': Unable to move file';
+                        unlink($destination);
+                        $_SESSION['error_message'] = __('update_failed');
                         header('Location: index.php?page=documents');
                         exit;
                     }
                 } else {
-                    $_SESSION['error_message'] = __('invalid_file_type') . ' or ' . __('file_too_large');
+                    $_SESSION['error_message'] = __('update_failed') . ': Unable to move file';
                     header('Location: index.php?page=documents');
                     exit;
                 }
@@ -316,6 +376,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
 ?>
 
 <div class="space-y-6">
+    <!-- NEW: Display error or success messages -->
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['error_message']); ?></span>
+            <?php unset($_SESSION['error_message']); ?>
+        </div>
+    <?php elseif (isset($_SESSION['success_message'])): ?>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline"><?php echo htmlspecialchars($_SESSION['success_message']); ?></span>
+            <?php unset($_SESSION['success_message']); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="bg-white shadow rounded-lg p-6">
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-900"><?php echo __('document_list'); ?></h2>
@@ -429,16 +502,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo __('folder'); ?></th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo __('upload_date'); ?></th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo __('file_size'); ?></th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo __('version'); ?></th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"><?php echo __('actions'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <?php if (empty($documents)): ?>
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500"><?php echo __('no_data'); ?></td>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500"><?php echo __('no_data'); ?></td>
                         </tr>
                         <?php else: ?>
                         <?php foreach ($documents as $doc): ?>
+                        <?php
+                            $query = "SELECT versi FROM Metadata WHERE id_dokumen = :id_dokumen";
+                            $stmt = $db->prepare($query);
+                            $stmt->bindParam(':id_dokumen', $doc['id_dokumen'], PDO::PARAM_INT);
+                            $stmt->execute();
+                            $metadata = $stmt->fetch(PDO::FETCH_ASSOC);
+                            $version = $metadata['versi'] ?? '1.0';
+                        ?>
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 <i class="<?php echo htmlspecialchars(getFileIcon(pathinfo($doc['nama_file'], PATHINFO_EXTENSION))); ?> mr-2"></i>
@@ -448,6 +530,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($doc['nama_folder'] ?? ''); ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo date('M d, Y', strtotime($doc['tanggal_upload'])); ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars(formatFileSize($doc['ukuran_file'])); ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($version); ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'read')): ?>
                                 <a href="<?php echo url('download', ['id' => $doc['id_dokumen']]); ?>" class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-download"></i> <?php echo __('download'); ?></a>
