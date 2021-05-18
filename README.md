@@ -1,3 +1,9 @@
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/5ceb8290-0cd7-41e7-a0f8-78ec7879fde2" alt="Header" width="600"/>
+</p>
+
+
 # 📁 File Management System
 
 <div align="center">
