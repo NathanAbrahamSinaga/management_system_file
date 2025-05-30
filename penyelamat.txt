@@ -1,0 +1,204 @@
+file_management_system/
+├── uploads/
+│   └── documents/
+├── components/
+│   ├── footer.php
+│   ├── header.php
+│   └── sidebar.php
+├── config/
+│   ├── config.php
+│   └── database.php
+├── includes/
+│   ├── auth.php
+│   ├── functions.php
+│   ├── language.php
+│   └── routes.php
+├── index.php
+├── languages/
+│   ├── en.php
+│   └── id.php
+├── pages/
+│   ├── categories.php
+│   ├── dashboard.php
+│   ├── documents.php
+│   ├── folders.php
+│   ├── login.php
+│   ├── logout.php
+│   ├── profile.php
+│   ├── register.php
+│   └── users.php
+
+query
+
+CREATE TABLE User (
+    id_user INT PRIMARY KEY AUTO_INCREMENT,
+    nama VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+    role ENUM('Admin', 'User', 'Viewer') NOT NULL
+);
+
+CREATE TABLE Folder (
+    id_folder INT PRIMARY KEY AUTO_INCREMENT,
+    nama_folder VARCHAR(100),
+    path TEXT,
+    parent_id INT,
+    FOREIGN KEY (parent_id) REFERENCES Folder(id_folder) ON DELETE SET NULL
+);
+
+CREATE TABLE Kategori (
+    id_kategori INT PRIMARY KEY AUTO_INCREMENT,
+    nama_kategori VARCHAR(100),
+    deskripsi TEXT
+);
+
+CREATE TABLE Dokumen (
+    id_dokumen INT PRIMARY KEY AUTO_INCREMENT,
+    nama_file VARCHAR(255),
+    deskripsi TEXT,
+    tanggal_upload DATETIME,
+    tipe_file VARCHAR(50),
+    ukuran_file INT,
+    path_file TEXT,
+    id_user INT,
+    id_kategori INT,
+    FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE,
+    FOREIGN KEY (id_kategori) REFERENCES Kategori(id_kategori) ON DELETE SET NULL
+);
+
+CREATE TABLE Metadata (
+    id_metadata INT PRIMARY KEY AUTO_INCREMENT,
+    id_dokumen INT UNIQUE,
+    judul VARCHAR(255),
+    penulis VARCHAR(100),
+    tanggal_dibuat DATE,
+    versi VARCHAR(50),
+    FOREIGN KEY (id_dokumen) REFERENCES Dokumen(id_dokumen) ON DELETE CASCADE
+);
+
+CREATE TABLE Tag (
+    id_tag INT PRIMARY KEY AUTO_INCREMENT,
+    nama_tag VARCHAR(100) UNIQUE
+);
+
+CREATE TABLE Dokumen_Tag (
+    id_dokumen INT,
+    id_tag INT,
+    PRIMARY KEY (id_dokumen, id_tag),
+    FOREIGN KEY (id_dokumen) REFERENCES Dokumen(id_dokumen) ON DELETE CASCADE,
+    FOREIGN KEY (id_tag) REFERENCES Tag(id_tag) ON DELETE CASCADE
+);
+
+CREATE TABLE Hak_Akses (
+    id_akses INT PRIMARY KEY AUTO_INCREMENT,
+    id_user INT,
+    id_dokumen INT,
+    hak_baca BOOLEAN DEFAULT FALSE,
+    hak_tulis BOOLEAN DEFAULT FALSE,
+    hak_hapus BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE,
+    FOREIGN KEY (id_dokumen) REFERENCES Dokumen(id_dokumen) ON DELETE CASCADE
+);
+
+CREATE TABLE Log_Akses (
+    id_log INT PRIMARY KEY AUTO_INCREMENT,
+    id_user INT,
+    id_dokumen INT,
+    aksi ENUM('lihat', 'edit', 'hapus'),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_user) REFERENCES User(id_user) ON DELETE CASCADE,
+    FOREIGN KEY (id_dokumen) REFERENCES Dokumen(id_dokumen) ON DELETE CASCADE
+);
+
+CREATE TABLE Dokumen_Folder (
+    id_dokumen INT,
+    id_folder INT,
+    PRIMARY KEY (id_dokumen, id_folder),
+    FOREIGN KEY (id_dokumen) REFERENCES Dokumen(id_dokumen) ON DELETE CASCADE,
+    FOREIGN KEY (id_folder) REFERENCES Folder(id_folder) ON DELETE CASCADE
+);
+
+
+footer.php  
+
+
+
+header.php  
+
+
+
+sidebar.php  
+
+
+
+config.php  
+
+
+
+database.php  
+
+
+
+auth.php  
+
+
+
+functions.php  
+
+
+
+language.php  
+
+
+
+routes.php  
+
+
+
+index.php  
+
+
+
+en.php  
+
+
+
+id.php  
+
+
+
+categories.php  
+
+
+
+dashboard.php  
+
+
+
+documents.php  
+
+
+
+folders.php  
+
+
+
+login.php  
+
+
+
+logout.php  
+
+
+
+profile.php  
+
+
+
+register.php  
+
+
+
+users.php
+
+
