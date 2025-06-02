@@ -3,7 +3,7 @@
 function getPageContent($page) {
     $allowed_pages = [
         'dashboard', 'documents', 'folders', 'categories', 'users', 
-        'profile', 'login', 'register', 'logout'
+        'profile', 'login', 'register', 'logout', 'download'
     ];
     
     if (in_array($page, $allowed_pages)) {

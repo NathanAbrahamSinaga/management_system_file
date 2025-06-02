@@ -73,9 +73,9 @@ try {
     ];
     $mime_type = $mime_types[strtolower($file_type)] ?? 'application/octet-stream';
 
-    // Set download headers
+    // Set headers for download
     header('Content-Description: File Transfer');
-    header("Content-Type: $mime_type");
+    header('Content-Type: ' . $mime_type);
     header('Content-Disposition: attachment; filename="' . basename($file_name) . '"');
     header('Content-Length: ' . $file_size);
     header('Expires: 0');
@@ -90,10 +90,10 @@ try {
 
     // Stream the file
     readfile($file_path);
-
+    
     // Log the download activity
     logActivity($_SESSION['user_id'], $id_dokumen, 'lihat');
-
+    
     exit;
 } catch (PDOException $e) {
     error_log("Download failed: Database error - " . $e->getMessage());
@@ -102,4 +102,3 @@ try {
     echo 'Database error';
     exit;
 }
-?>

@@ -450,7 +450,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars(formatFileSize($doc['ukuran_file'])); ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'read')): ?>
-                                <a href="<?php echo htmlspecialchars($doc['path_file']); ?>" class="text-blue-600 hover:text-blue-800 mr-3" download><i class="fas fa-download"></i> <?php echo __('download'); ?></a>
+                                <a href="<?php echo url('download', ['id' => $doc['id_dokumen']]); ?>" class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-download"></i> <?php echo __('download'); ?></a>
                                 <?php endif; ?>
                                 <?php if (hasFilePermission($_SESSION['user_id'], $doc['id_dokumen'], 'write')): ?>
                                 <a href="<?php echo url('documents', ['action' => 'edit', 'id' => $doc['id_dokumen']]); ?>" class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i> <?php echo __('edit'); ?></a>
@@ -517,5 +517,4 @@ function searchTable(input, tableId) {
     }
 }
 </script>
-
 <?php ob_end_flush(); ?>
