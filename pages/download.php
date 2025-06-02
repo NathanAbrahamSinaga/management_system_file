@@ -44,7 +44,7 @@ try {
         exit;
     }
 
-    $file_path = $doc['path_file']; // Expected: /path/to/root/uploads/documents/filename.ext
+    $file_path = $doc['path_file'];
     $file_name = $doc['nama_file'];
     $file_size = $doc['ukuran_file'];
     $file_type = $doc['tipe_file'];
@@ -63,10 +63,13 @@ try {
         'pdf' => 'application/pdf',
         'doc' => 'application/msword',
         'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'jpg' => 'image/jpeg',
-        'png' => 'image/png',
         'txt' => 'text/plain',
-        // Add more as needed
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed'
     ];
     $mime_type = $mime_types[strtolower($file_type)] ?? 'application/octet-stream';
 
@@ -86,15 +89,10 @@ try {
     flush();
 
     // Stream the file
-    $file = fopen($file_path, 'rb');
-    while (!feof($file)) {
-        echo fread($file, 8192);
-        flush();
-    }
-    fclose($file);
+    readfile($file_path);
 
-    // Log the download
-    logActivity($_SESSION['user_id'], $id_dokumen, 'download');
+    // Log the download activity
+    logActivity($_SESSION['user_id'], $id_dokumen, 'lihat');
 
     exit;
 } catch (PDOException $e) {

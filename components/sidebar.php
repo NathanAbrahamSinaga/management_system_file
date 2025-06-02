@@ -1,8 +1,8 @@
 <!-- Sidebar -->
-<div id="sidebar" class="sidebar sidebar-transition fixed inset-y-0 left-0 z-30 w-64 bg-gray-800 transform md:transform-none md:opacity-100 md:relative md:translate-x-0">
+<div id="sidebar" class="sidebar sidebar-transition fixed inset-y-0 left-0 z-30 w-full sm:w-64 bg-gray-800 transform sm:transform-none sm:opacity-100 sm:relative sm:translate-x-0">
     <div class="flex flex-col h-full">
         <!-- Navigation Menu -->
-        <nav class="flex-1 px-4 py-6 space-y-2">
+        <nav class="flex-1 px-2 sm:px-4 py-6 space-y-2">
             <!-- Dashboard -->
             <a href="<?php echo url('dashboard'); ?>" 
                class="<?php echo isActivePage('dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'; ?> 
@@ -73,7 +73,7 @@
                     </div>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm font-medium text-white">
+                    <p class="text-sm font-medium text-white truncate max-w-[150px]">
                         <?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : 'Guest'; ?>
                     </p>
                     <p class="text-xs text-gray-400">
@@ -86,7 +86,7 @@
 </div>
 
 <!-- Overlay for mobile -->
-<div id="sidebarOverlay" class="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden hidden"></div>
+<div id="sidebarOverlay" class="fixed inset-0 z-20 bg-black bg-opacity-50 sm:hidden hidden"></div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -106,5 +106,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (overlay) {
         overlay.addEventListener('click', toggleSidebar);
     }
+
+    // Close sidebar when a menu item is clicked on mobile
+    sidebar.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 640) {
+                toggleSidebar();
+            }
+        });
+    });
 });
 </script>
